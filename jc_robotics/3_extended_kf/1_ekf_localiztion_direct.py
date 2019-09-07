@@ -25,9 +25,7 @@ def jacobian_H(x):
     return jH
 
 def motion_model(x, u):
-    v = u[0,0]
-    
-    yaw = u[1,0]
+    yaw = x[2,0]
 
     A = np.array([
         [1, 0, 0, 0],
@@ -58,13 +56,10 @@ def observation_model(x):
 
     return z
 #
-def ekf_localization(xTrue, xEst, pEst, u):
+def ekf_localization(xEst, pEst, z, u):
 
 
-    xTrue = motion_model(xTrue,u)
 
-
-    z = observation_model(xTrue) + GPS_noise@np.random.randn(2,1)
     xPred = motion_model(xEst,u)
 
     zPred = observation_model(xPred)
@@ -84,9 +79,13 @@ def ekf_localization(xTrue, xEst, pEst, u):
 
     pEst = (np.eye(4) - k@jH)@pPred
 
-    return xTrue, xEst, pEst
+    return xEst, pEst
 
+def observation(x,u):
+    xTrue = motion_model(x,u)
+    z = observation_model(xTrue) + GPS_noise@np.random.randn(2,1)
 
+    return xTrue, z
 
 pos_x = 0
 pos_y = 0
@@ -131,13 +130,26 @@ xEst = xInit
 pEst = pInit
 
 
-SIM_Time = 5
+SIM_Time = 50
 time = 0
+
+histTrue = xTrue
+histEst = xEst
+histz = np.zeros((2,1))
+
+
 while SIM_Time >= time:
     time +=DT
 
-    xTrue, xEst, pEst = ekf_localization(xTrue,xEst,pEst,u)
+    xTrue, z = observation(xTrue, u)
+
+    xEst, pEst = ekf_localization(xEst,pEst,z, u)
     #print("xTrue : " ,xTrue)
-    print("xEst : ", xEst)
+    print("xEst : ")
+    print(xEst[:2,:])
     print("-------------------")
     #print("pEst : ", pEst)
+
+    histTrue = np.hstack((histTrue,xTrue))
+    histEst = np.hstack((histEst,xEst))
+    histz = np.hstack((histz,z))
