@@ -136,6 +136,7 @@ time = 0
 histTrue = xTrue
 histEst = xEst
 histz = np.zeros((2,1))
+show_visualization = True
 
 
 while SIM_Time >= time:
@@ -145,11 +146,21 @@ while SIM_Time >= time:
 
     xEst, pEst = ekf_localization(xEst,pEst,z, u)
     #print("xTrue : " ,xTrue)
-    print("xEst : ")
-    print(xEst[:2,:])
-    print("-------------------")
+    #print("xEst : ")
+    #print(xEst[:2,:])
+    #print("-------------------")
     #print("pEst : ", pEst)
 
     histTrue = np.hstack((histTrue,xTrue))
     histEst = np.hstack((histEst,xEst))
     histz = np.hstack((histz,z))
+
+    if show_visualization:
+        plt.plot(histEst[0],histEst[1],'g',label="EstPose")
+
+        plt.plot(z[0],z[1],'.b',label="measurement")
+
+        plt.plot(histTrue[0],histTrue[1],'r--',label="TruePose")
+        plt.axis('equal')
+        plt.pause(0.01)
+
