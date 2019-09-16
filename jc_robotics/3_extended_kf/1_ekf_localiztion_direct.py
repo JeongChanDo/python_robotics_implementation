@@ -130,14 +130,14 @@ xEst = xInit
 pEst = pInit
 
 
-SIM_Time = 50
+SIM_Time = 60
 time = 0
 
 histTrue = xTrue
 histEst = xEst
 histz = np.zeros((2,1))
 
-
+show_animation = True
 while SIM_Time >= time:
     time +=DT
 
@@ -145,11 +145,20 @@ while SIM_Time >= time:
 
     xEst, pEst = ekf_localization(xEst,pEst,z, u)
     #print("xTrue : " ,xTrue)
-    print("xEst : ")
-    print(xEst[:2,:])
-    print("-------------------")
+    #print("xEst : ")
+    #print(xEst[:2,:])
+    #print("-------------------")
     #print("pEst : ", pEst)
 
     histTrue = np.hstack((histTrue,xTrue))
     histEst = np.hstack((histEst,xEst))
     histz = np.hstack((histz,z))
+
+    if show_animation:
+
+        plt.cla()
+        plt.plot(histEst[0,:].flatten(), histEst[1,:],"-b")
+        plt.plot(histTrue[0,:].flatten(), histTrue[1,:].flatten(),"-k")
+        plt.axis("equal")
+        plt.grid(True)
+        plt.pause(0.001)
