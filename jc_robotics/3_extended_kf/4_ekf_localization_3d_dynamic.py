@@ -1,6 +1,8 @@
 import numpy as np
 import random
 import matplotlib.pyplot as plt
+from matplotlib import cm
+from mpl_toolkits.mplot3d import Axes3D
 
 #######
 def jacobian_F(x,u):
@@ -87,6 +89,21 @@ def observation(x,u):
 
     return xTrue, z
 
+def multivariate_gaussian(pos,mu,sigma):
+    """
+    return the multivariate gaussian distribution on array pos.
+    """
+
+    n = mu.shape[0]
+    sigma_det = np.linalg.det(sigma)
+    sigma_inv = np.linalg.inv(sigma)
+    N = np.sqrt((2*np.pi)**n*sigma_det)
+
+    #this einsum call calculates (x-mu)^.sigma-1.(x-mu)
+    fac = np.einsum('...k,kl,...l->...',pos-mu,sigma_inv,pos-mu)
+    return np.exp(-fac/2)/N
+
+
 pos_x = 0
 pos_y = 0
 yaw = 0
@@ -130,7 +147,7 @@ xEst = xInit
 pEst = pInit
 
 
-SIM_Time = 60
+SIM_Time = 50
 time = 0
 
 histTrue = xTrue
@@ -138,33 +155,55 @@ histEst = xEst
 histz = np.zeros((2,1))
 show_visualization = True
 
-show_animation = True
+
+N = 50
+
+X = np.linspace(-12,12,N)
+Y = np.linspace(0,24,N)
+X, Y = np.meshgrid(X,Y)
+
+pos = np.empty(X.shape+(2,))
+pos[:,:,0] = X
+pos[:,:,1] = Y
+
+fig = plt.figure()
+
 while SIM_Time >= time:
     time +=DT
 
     xTrue, z = observation(xTrue, u)
 
     xEst, pEst = ekf_localization(xEst,pEst,z, u)
-    #print("xTrue : " ,xTrue)
-    #print("xEst : ")
-    #print(xEst[:2,:])
-    #print("-------------------")
-    #print("pEst : ", pEst)
-
+ 
     histTrue = np.hstack((histTrue,xTrue))
     histEst = np.hstack((histEst,xEst))
     histz = np.hstack((histz,z))
 
-    if show_visualization:
-        #print(xEst)
-        plt.plot(xEst[0],xEst[1],'.g',label="EstPose")
+    mu = np.array([xEst[0],xEst[1]])
+    mu = mu.reshape((2,))
+    sigma = np.array([
+        [pEst[0,0],pEst[0,1]],
+        [pEst[1,0],pEst[1,1]]
+    ])
 
-        #plt.plot(z[0],z[1],'.b',label="measurement")
+    Z = multivariate_gaussian(pos,mu,sigma)
+
+
+    if show_visualization:
+        ax = fig.gca(projection='3d')
+
+        """
+        plt.plot(xEst[0],xEst[1],'.g',label="EstPose")
 
         plt.plot(histTrue[0],histTrue[1],'r--',label="TruePose")
         plt.axis('equal')
-        plt.pause(0.01)
+        """
+        ax.plot_surface(X,Y,Z,rstride=3,cstride=3,linewidth=1, 
+            antialiased = True, cmap=cm.viridis)
+
+        cset = ax.contourf(X, Y, Z, zdir='z', offset= -0.5,cmap=cm.viridis)
+        ax.set_zlim(-0.5,1)
+
+        plt.pause(0.1)
+
         plt.clf()
-
-
-    print("pEst : ", pEst)
