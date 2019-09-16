@@ -201,6 +201,9 @@ while SIM_Time >= time:
         ax.plot_surface(X,Y,Z,rstride=3,cstride=3,linewidth=1, 
             antialiased = True, cmap=cm.viridis)
 
+        cset = ax.contourf(X, Y, Z, zdir='z', offset= -0.5,cmap=cm.viridis)
+        ax.set_zlim(-0.5,1)
+
         plt.pause(0.1)
 
         plt.clf()
