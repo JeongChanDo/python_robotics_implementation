@@ -198,10 +198,10 @@ while SIM_Time >= time:
         plt.plot(histTrue[0],histTrue[1],'r--',label="TruePose")
         plt.axis('equal')
         """
-        ax.plot(histEst[0],histEst[1],'b',zs=0.5, linewidth=5,label="EstPose")
+        ax.plot(histEst[0],histEst[1],'b',zs=0.5, linewidth=5,label="EstPose Trajectory")
         ax.plot(histTrue[0],histTrue[1],'--r',zs=0.5, linewidth=2,label="TruePose")
         #ax.plot_surface(X,Y,Z,rstride=3,cstride=3,linewidth=1, antialiased = True, cmap=cm.viridis)
-        ax.plot_wireframe(X, Y, Z, rstride=7, cstride=7)
+        ax.plot_wireframe(X, Y, Z, rstride=7, cstride=7,label="EstPose")
 
         cset = ax.contourf(X, Y, Z, zdir='z', offset= -0.5,cmap=cm.Greys)
         ax.set_zlim(-0.5,1)
