@@ -1,7 +1,8 @@
 import numpy as np
 import random
 import matplotlib.pyplot as plt
-
+from matplotlib import cm
+from mpl_toolkits.mplot3d import Axes3D
 #######
 def jacobian_F(x,u):
     v = u[0,0]
@@ -164,37 +165,28 @@ pos = np.empty(X.shape+(2,))
 pos[:,:,0] = X
 pos[:,:,1] = Y
 
-#fig = plt.figure()
-#ax = fig.gca(projection='3d')
+fig = plt.figure()
+ax = fig.gca(projection='3d')
 
-while SIM_Time >= time:
-    time +=DT
+time +=DT
+xTrue, z = observation(xTrue, u)
+xEst, pEst = ekf_localization(xEst,pEst,z, u)
 
-    xTrue, z = observation(xTrue, u)
+mu = np.array([xEst[0],xEst[1]])
+mu = mu.reshape((2,))
+sigma = np.array([
+    [pEst[0,0],pEst[0,1]],
+    [pEst[1,0],pEst[1,1]]
+])
 
-    xEst, pEst = ekf_localization(xEst,pEst,z, u)
- 
-    histTrue = np.hstack((histTrue,xTrue))
-    histEst = np.hstack((histEst,xEst))
-    histz = np.hstack((histz,z))
+Z = multivariate_gaussian(pos,mu,sigma)
 
-    mu = np.array([xEst[0],xEst[1]])
-    mu = mu.reshape((2,))
-    sigma = np.array([
-        [pEst[0,0],pEst[0,1]],
-        [pEst[1,0],pEst[1,1]]
-    ])
+print("X.shape : ", X.shape)
+print("Y.shape : ", Y.shape)
+print("Z.shape : ", Z.shape)
 
-    Z = multivariate_gaussian(pos,mu,sigma)
+ax.plot_surface(X,Y,Z,rstride=3,cstride=3,linewidth=1, 
+    antialiased = True, cmap=cm.viridis)
 
-
-    if show_visualization:
-        #print(xEst)
-        plt.plot(xEst[0],xEst[1],'.g',label="EstPose")
-
-        #plt.plot(z[0],z[1],'.b',label="measurement")
-
-        plt.plot(histTrue[0],histTrue[1],'r--',label="TruePose")
-        plt.axis('equal')
-        plt.pause(0.01)
-        plt.clf()
+plt.pause(0.01)
+#plt.clf()
