@@ -87,6 +87,21 @@ def observation(x,u):
 
     return xTrue, z
 
+def multivariate_gaussian(pos,mu,sigma):
+    """
+    return the multivariate gaussian distribution on array pos.
+    """
+
+    n = mu.shape[0]
+    sigma_det = np.linalg.det(sigma)
+    sigma_inv = np.linalg.inv(sigma)
+    N = np.sqrt((2*np.pi)**n*sigma_det)
+
+    #this einsum call calculates (x-mu)^.sigma-1.(x-mu)
+    fac = np.einsum('...k,kl,...l->...',pos-mu,sigma_inv,pos-mu)
+    return np.exp(-fac/2)/N
+
+
 pos_x = 0
 pos_y = 0
 yaw = 0
@@ -139,21 +154,39 @@ histz = np.zeros((2,1))
 show_visualization = True
 
 
+N = 100
+
+X = np.linspace(-15,15,N)
+Y = np.linspace(0,30,N)
+X, Y = np.meshgrid(X,Y)
+
+pos = np.empty(X.shape+(2,))
+pos[:,:,0] = X
+pos[:,:,1] = Y
+
+#fig = plt.figure()
+#ax = fig.gca(projection='3d')
+
 while SIM_Time >= time:
     time +=DT
 
     xTrue, z = observation(xTrue, u)
 
     xEst, pEst = ekf_localization(xEst,pEst,z, u)
-    #print("xTrue : " ,xTrue)
-    #print("xEst : ")
-    #print(xEst[:2,:])
-    #print("-------------------")
-    #print("pEst : ", pEst)
-
+ 
     histTrue = np.hstack((histTrue,xTrue))
     histEst = np.hstack((histEst,xEst))
     histz = np.hstack((histz,z))
+
+    mu = np.array([xEst[0],xEst[1]])
+    mu = mu.reshape((2,))
+    sigma = np.array([
+        [pEst[0,0],pEst[0,1]],
+        [pEst[1,0],pEst[1,1]]
+    ])
+
+    Z = multivariate_gaussian(pos,mu,sigma)
+
 
     if show_visualization:
         #print(xEst)
@@ -165,6 +198,3 @@ while SIM_Time >= time:
         plt.axis('equal')
         plt.pause(0.01)
         plt.clf()
-
-
-    print("pEst : ", pEst)
