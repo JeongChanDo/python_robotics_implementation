@@ -116,14 +116,14 @@ def calc_innovation(lm,xEst, PEst, z, LMid):
 
     y = (z-zp).T
     y[1] = pi_2_pi(y[1])
-
+    #jacob 2019 10 08 2150
 
     H = jacobH(q, delta, xEst, LMid + 1)
 
     S = H@PEst@ H.T + Cx[0:2,0:2]
 
     return y, S,H
-    
+
 
 
 
