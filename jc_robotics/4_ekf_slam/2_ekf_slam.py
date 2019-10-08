@@ -54,6 +54,10 @@ def motion_model(x, u):
 def pi_2_pi(angle):
     return (angle + math.pi)% (2*math.pi) - math.pi
 
+def clac_n_LM(x):
+
+    n = int((len(x) - STATE_SIZE/LM_SIZE))
+    return n
 
 def observation(xTrue, xd, u, RFID):
 
@@ -86,6 +90,89 @@ def observation(xTrue, xd, u, RFID):
     return xTrue, z, xd, ud
 
 
+def jacob_motion(x,u):
+
+    Fx = np.hstack((np.eye(STATE_SIZE), np.zeros(STATE_SIZE, LM_SIZE * clac_n_LM(x))))
+
+    jF = np.array([
+        [0, 0, -DT *u[0] * math.sin(x[2,0])],
+        [0, 0, DT * u[0] * math.cos(x[2,0])],
+        [0, 0, 0]
+    ])
+
+    G = np.eye(STATE_SIZE) + Fx.T * jF * Fx
+
+    return G, Fx
+
+
+def calc_innovation(lm,xEst, PEst, z, LMid):
+
+    delta = lm -xEst[0:2]
+    q = (delta.T @ delta)[0,0]
+
+    zangle = math.atan2(delta[1,0], delta[0,0]) - xEst[2,0]
+
+    zp = np.array([[math.sqrt(q), pi_2_pi(zangle)]])
+
+    y = (z-zp).T
+    y[1] = pi_2_pi(y[1])
+
+
+    H = jacobH(q, delta, xEst, LMid + 1)
+
+    S = H@PEst@ H.T + Cx[0:2,0:2]
+
+    return y, S,H
+    
+
+
+
+
+def get_LM_Pos_from_state(x,ind):
+    lm = x[STATE_SIZE + LM_SIZE * ind: STATE_SIZE + LM_SIZE*(ind+1),:]
+    return lm
+
+def search_correspond_LM_ID(xAug,PAug, zi):
+    """
+    Landmark Association with Mahalanobis distance
+    """
+
+    nLM = calc_n_LM(xAug)
+
+    mdist = []
+
+    for i in range(nLM):
+
+        lm = get_LM_Pos_from_state(xAug,i):
+        y, S, H = calc_innovation(lm,xAug,PAug,zi,i)
+        mdist.append(y.T@np.linalg.inv(S)@y)
+
+    mdist.append(M_DIST_TH)
+
+    minid = mdist.index(min(mdist))
+
+    return minid
+
+
+
+
+def ekf_slam(xEst,PEst,u,z):
+
+    S = STATE_SIZE
+
+    xEst[0:S] = motion_model(xEst[0:S],u)
+
+
+    G, Fx = jacob_motion(xEst[0:S],u)
+
+
+    PEst[0:S, 0:S] = G.T*PEst[0:S, 0:S] * G + Fx.T*Cx *Fx
+
+    initP = np.eye(2)
+
+    for iz in range(len(z[:,0])):
+        minid = search_correspond_LM_ID(xEst,PEst,z[iz, 0:2])
+        nLM = clac_n_LM(xEst)
 
 
 
@@ -118,6 +205,10 @@ def main():
         time += DT
         u = calc_input()
         xTrue, z, xDR,ud = observation(xTrue, xDR, u, RFID)
+
+        xEst, PEst = ekf_slam(xEst,PEst, ud, z)
+
+        x_state = xEst[0:STATE_SIZE]
 
 
         hxDR = np.hstack((hxDR, xDR))
