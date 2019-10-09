@@ -105,6 +105,27 @@ def jacob_motion(x,u):
     return G, Fx
 
 
+def jacobH(q, delta, x, i):
+
+    sq = math.sqrt(q)
+    G = np.array([
+        [-sq*delta[0,0], -sq*delta[1,0], 0, sq*delta[0,0], sq*delta[1,0]],
+        [delta[1,0], -delta[0,0], -1.0, -delta[1,0], delta[0,0]]
+    ])
+
+    G = G/q
+
+    nLM = calc_n_LM(x)
+
+    F1 = np.hstack((np.eye(3), np.zeros(3,2*nLM)))
+    F2 = np.hstack((np.zeros((2,3)), np.zeros((2,2*(i-1)))),
+                    np.eye(2), np.zeros((2,2*nLM-2*i)))
+    
+    F = np.vstack((F1,F2))
+    H = G@F
+
+    return H
+
 def calc_innovation(lm,xEst, PEst, z, LMid):
 
     delta = lm -xEst[0:2]
@@ -116,7 +137,6 @@ def calc_innovation(lm,xEst, PEst, z, LMid):
 
     y = (z-zp).T
     y[1] = pi_2_pi(y[1])
-    #jacob 2019 10 08 2150
 
     H = jacobH(q, delta, xEst, LMid + 1)
 
@@ -173,6 +193,27 @@ def ekf_slam(xEst,PEst,u,z):
     for iz in range(len(z[:,0])):
         minid = search_correspond_LM_ID(xEst,PEst,z[iz, 0:2])
         nLM = clac_n_LM(xEst)
+
+
+        if minid == nLM:
+            xAug = np.vstack((xEst, calc_LM_Pos(xEst,z[iz,:])))
+            PAug = np.vstack((np.hstack((PEst, np.zeros((len(xEst),LM_SIZE))))),
+                    np.hstack((np.zeros((LM_SIZE,len(xEst)),initP))))
+
+            xEst = xAug
+            PEst = PAug
+        lm = get_LM_Pos_from_state(xEst,minid)
+
+        y, S, H = calc_innovation(lm,xEst, PEst, z[iz,0:2], minid)
+
+        K = (PEst@H.T)@np.linalg.inv(S)
+
+        xEst = xEst + (K@y)
+        PEst = (np.eye(len(xEst)) - (K@H))@PEst
+
+    xEst[2] = pi_2_pi(xEst[2])
+    return xEst, PEst
+    
 
 
 
