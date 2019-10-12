@@ -87,6 +87,16 @@ def observation(x,u):
 
     return xTrue, z
 
+
+def calc_input():
+    v = 0.5
+    yaw_rate = 0
+
+    u = np.array([
+        [v],
+        [yaw_rate]
+    ])
+    return u
 pos_x = 0
 pos_y = 0
 yaw = 0
@@ -102,13 +112,7 @@ xInit = np.array([
 
 pInit = np.eye(4)
 
-v = 1
-yaw_rate = 0.1
 
-u = np.array([
-    [v],
-    [yaw_rate]
-])
 
 GPS_noise = np.diag([0.5, 0.5])
 input_noise = np.diag([1, 1])
@@ -128,7 +132,7 @@ xEst = xInit
 pEst = pInit
 
 
-SIM_Time = 50
+SIM_Time = 5
 time = 0
 
 histTrue = xTrue
@@ -139,15 +143,11 @@ show_visualization = True
 
 while SIM_Time >= time:
     time +=DT
+    u = calc_input()
+
     xTrue, z = observation(xTrue, u)
     xEst, pEst = ekf_localization(xEst,pEst,z, u)
     
-    #print("xTrue : " ,xTrue)
-    #print("xEst : ")
-    #print(xEst[:2,:])
-    #print("-------------------")
-    #print("pEst : ", pEst)
-
     histTrue = np.hstack((histTrue,xTrue))
     histEst = np.hstack((histEst,xEst))
     histz = np.hstack((histz,z))
@@ -161,7 +161,13 @@ while SIM_Time >= time:
         plt.plot(histTrue[0],histTrue[1],'r--',label="TruePose")
         plt.axis('equal')
         plt.pause(0.01)
-        plt.clf()
 
 
     print("pEst : ", pEst)
+
+    if SIM_Time >= time:
+        plt.clf()
+
+
+
+plt.pause(100)

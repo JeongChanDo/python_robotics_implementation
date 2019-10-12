@@ -23,7 +23,7 @@ def KalmanFilter(xEst, pEst, u, A, B, C, R, Q, show_animation=True):
     
     if show_animation ==True:
         #x = np.arange(0,xEst[0]+10,0.1)
-        x = np.arange(5,30,0.1)
+        x = np.arange(5,40,0.1)
         plot_xPred = stats.norm.pdf(x, xPred[0],pPred[0,0])
         plot_xEst = stats.norm.pdf(x, xEst[0],pEst[0,0])
         plot_z = stats.norm.pdf(x,z[0],Q[0,0])
@@ -73,7 +73,7 @@ pEst = np.eye(2)
 time = 0
 dt = 1
 u = 1
-SIM_TIME = 20
+SIM_TIME = 30
 
 
 while SIM_TIME >= time:
