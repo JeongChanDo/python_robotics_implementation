@@ -140,6 +140,10 @@ histEst = xEst
 histz = np.zeros((2,1))
 show_visualization = True
 
+RFID = np.array([
+    [1,0.5]
+])
+
 
 while SIM_Time >= time:
     time +=DT
@@ -170,4 +174,4 @@ while SIM_Time >= time:
 
 
 
-plt.pause(100)
+plt.pause(5)
