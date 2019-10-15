@@ -1,6 +1,7 @@
 import numpy as np
 import random
 import matplotlib.pyplot as plt
+import math
 
 #######
 def jacobian_F(x,u):
@@ -81,9 +82,28 @@ def ekf_localization(xEst, pEst, z, u):
 
     return xEst, pEst
 
-def observation(x,u):
+def pi_2_pi(angle):
+    return (angle + math.pi) % (2 * math.pi) - math.pi
+
+def observation(x,u, RFID):
     xTrue = motion_model(x,u)
-    z = observation_model(xTrue) + GPS_noise@np.random.randn(2,1)
+
+
+    z = np.zeros((0,3))
+    for i in range(len(RFID)):
+        dx = RFID[i,0] - xTrue[0,0]
+        dy = RFID[i,1] - xTrue[1,0]
+        d = math.sqrt(dx**2 + dy**2)
+        angle = pi_2_pi(math.atan2(dy, dx)-xTrue[2,0])
+        s = i
+
+
+        if d<= MAX_RANGE:
+            dn = d + np.random.randn() *Q[0,0]
+            anglen = angle + np.random.randn() * Q[1,1]
+            zi = np.array([dn,anglen,i])
+            z = np.vstack((z,zi))
+
 
     return xTrue, z
 
@@ -96,21 +116,26 @@ def calc_input():
         [v],
         [yaw_rate]
     ])
+
     return u
 pos_x = 0
 pos_y = 0
 yaw = 0
 v = 0
 
-
+MAX_RANGE = 100
+"""
 xInit = np.array([
     [pos_x],
     [pos_y],
     [yaw],
     [v]
 ])
-
-pInit = np.eye(4)
+"""
+STATE_SIZE = 4
+xTrue = np.zeros((STATE_SIZE,1))
+xEst = np.zeros((STATE_SIZE,1))
+pEst = np.eye(STATE_SIZE)
 
 
 
@@ -127,9 +152,7 @@ Q = np.array([
     [0, 1]
 ])**2
 
-xTrue = xInit
-xEst = xInit
-pEst = pInit
+
 
 
 SIM_Time = 5
@@ -137,7 +160,6 @@ time = 0
 
 histTrue = xTrue
 histEst = xEst
-histz = np.zeros((2,1))
 show_visualization = True
 
 RFID = np.array([
@@ -145,16 +167,18 @@ RFID = np.array([
 ])
 
 
+
 while SIM_Time >= time:
     time +=DT
     u = calc_input()
 
-    xTrue, z = observation(xTrue, u)
+    xTrue, z = observation(xTrue, u, RFID)
     xEst, pEst = ekf_localization(xEst,pEst,z, u)
+
+    print(z)
     
     histTrue = np.hstack((histTrue,xTrue))
     histEst = np.hstack((histEst,xEst))
-    histz = np.hstack((histz,z))
 
     if show_visualization:
         #print(xEst)
