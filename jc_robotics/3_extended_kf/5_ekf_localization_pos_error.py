@@ -147,7 +147,7 @@ xEst = xInit
 pEst = pInit
 
 
-SIM_Time = 50
+SIM_Time = 60
 time = 0
 
 histTrue = xTrue
@@ -192,12 +192,6 @@ while SIM_Time >= time:
     if show_visualization:
         ax = fig.gca(projection='3d')
 
-        """
-        plt.plot(xEst[0],xEst[1],'.g',label="EstPose")
-
-        plt.plot(histTrue[0],histTrue[1],'r--',label="TruePose")
-        plt.axis('equal')
-        """
         ax.plot(histEst[0],histEst[1],'b',zs=0.5, linewidth=5,label="EstPose Trajectory")
         ax.plot(histTrue[0],histTrue[1],'--r',zs=0.5, linewidth=2,label="TruePose")
         #ax.plot_surface(X,Y,Z,rstride=3,cstride=3,linewidth=1, antialiased = True, cmap=cm.viridis)
@@ -211,3 +205,20 @@ while SIM_Time >= time:
         plt.pause(0.1)
 
         plt.cla()
+
+
+pos_x = np.arange(0,SIM_Time+DT,DT)
+print("pos_x.shape : " ,pos_x.shape)
+print(pos_x)
+pos_error = histTrue - histEst
+print("pos_error.shape : ", pos_error.shape)
+
+fig2, axs = plt.subplots(3)
+axs[0].set_title("pos x error")
+axs[0].plot(pos_x,pos_error[0,:])
+axs[1].set_title("pos y error")
+axs[1].plot(pos_x,pos_error[1,:])
+axs[2].set_title("orientation error")
+axs[2].plot(pos_x,pos_error[2,:])
+
+plt.show()

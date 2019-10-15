@@ -128,7 +128,7 @@ xEst = xInit
 pEst = pInit
 
 
-SIM_Time = 50
+SIM_Time = 60
 time = 0
 
 histTrue = xTrue
@@ -136,7 +136,7 @@ histEst = xEst
 histz = np.zeros((2,1))
 show_visualization = True
 
-
+show_animation = True
 while SIM_Time >= time:
     time +=DT
     xTrue, z = observation(xTrue, u)
